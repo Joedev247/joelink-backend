@@ -20,7 +20,8 @@ const store = await createDataStore();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
+const adminStaticPath = path.resolve(__dirname, '..', 'src', 'admin');
+app.use('/admin', express.static(adminStaticPath));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'joelink-backend' });
