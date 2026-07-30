@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JoeLink Admin</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; background: #0f172a; color: #f8fafc; }
+      main { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+      .card { background: #111827; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; }
+      .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      code { background: #1f2937; padding: 0.2rem 0.4rem; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>JoeLink Admin Dashboard</h1>
+      <p>Manage products, users, orders, wallet activity, and workflow from the backend service.</p>
+      <div class="grid">
+        <div class="card">
+          <h2>API Health</h2>
+          <p><code>/api/health</code></p>
+        </div>
+        <div class="card">
+          <h2>Products</h2>
+          <p><code>/api/products</code></p>
+        </div>
+        <div class="card">
+          <h2>Users</h2>
+          <p><code>/api/users</code></p>
+        </div>
+        <div class="card">
+          <h2>Orders</h2>
+          <p><code>/api/orders</code></p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
