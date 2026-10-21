@@ -115,63 +115,90 @@ export async function createDataStore() {
   const client = assertSupabaseClient();
 
   const seedIfNeeded = async () => {
-    const { data: existingUsers, error } = await client.from('users').select('id').limit(1);
-    if (error) throw error;
-    if (existingUsers && existingUsers.length > 0) return;
+    const [
+      { data: existingUsers, error: usersQueryError },
+      { data: existingProducts, error: productsQueryError },
+    ] = await Promise.all([
+      client.from('users').select('id').limit(1),
+      client.from('products').select('id').limit(1),
+    ]);
+    if (usersQueryError) throw usersQueryError;
+    if (productsQueryError) throw productsQueryError;
 
     const adminPasswordHash = bcrypt.hashSync('admin', 12);
     const customerPasswordHash = bcrypt.hashSync('customer123', 12);
 
-    await client.from('users').insert([
-      {
-        id: 'user_1',
-        name: 'Admin',
-        email: 'admin@joelink.test',
-        role: 'admin',
-        password: adminPasswordHash,
-        wallet_balance: 2500,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'user_2',
-        name: 'Customer',
-        email: 'customer@joelink.test',
-        role: 'customer',
-        password: customerPasswordHash,
-        wallet_balance: 0,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    if (!existingUsers?.length) {
+      const { error } = await client.from('users').insert([
+        {
+          id: 'user_1',
+          name: 'Admin',
+          email: 'admin@joelink.test',
+          role: 'admin',
+          password: adminPasswordHash,
+          wallet_balance: 2500,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 'user_2',
+          name: 'Customer',
+          email: 'customer@joelink.test',
+          role: 'customer',
+          password: customerPasswordHash,
+          wallet_balance: 0,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      if (error) throw error;
+    }
 
-    await client.from('products').insert([
-      {
-        id: '1',
-        name: 'Smartphone X',
-        price: 799,
-        description: 'Flagship device with premium camera and storage.',
-        category: 'Phones',
-        image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
-        stock: 24,
-        featured: true,
-        credentials: JSON.stringify({ username: 'demo', password: 'demo123' }),
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Wireless Headset',
-        price: 199,
-        description: 'Immersive sound and active noise cancellation.',
-        category: 'Audio',
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
-        stock: 18,
-        featured: true,
-        credentials: JSON.stringify({ username: 'audio', password: 'demo123' }),
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    if (!existingProducts?.length) {
+      const { error } = await client.from('products').insert([
+        {
+          id: '1',
+          name: 'Smartphone X',
+          price: 799,
+          description: 'Flagship device with premium camera and storage.',
+          category: 'Phones',
+          image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
+          stock: 24,
+          featured: true,
+          credentials: JSON.stringify({ username: 'demo', password: 'demo123' }),
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          name: 'Wireless Headset',
+          price: 199,
+          description: 'Immersive sound and active noise cancellation.',
+          category: 'Audio',
+          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80',
+          stock: 18,
+          featured: true,
+          credentials: JSON.stringify({ username: 'audio', password: 'demo123' }),
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      if (error) throw error;
+    }
   };
 
-  await seedIfNeeded();
+  let seedPromise: Promise<void> | undefined;
+  const ensureSeeded = () => {
+    if (!seedPromise) {
+      seedPromise = seedIfNeeded().catch((error: unknown) => {
+        seedPromise = undefined;
+        throw error;
+      });
+    }
+    return seedPromise;
+  };
+  const withSeed = <Args extends unknown[], Result>(
+    operation: (...args: Args) => Promise<Result>,
+  ) => async (...args: Args): Promise<Result> => {
+    await ensureSeeded();
+    return operation(...args);
+  };
 
   const listProducts = async () => {
     const { data, error } = await client.from('products').select('*').order('created_at', { ascending: false });
@@ -521,23 +548,23 @@ export async function createDataStore() {
   };
 
   return {
-    listProducts,
-    getProduct,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    listUsers,
-    getUser,
-    createUser,
-    updateUser,
-    deleteUser,
-    listOrders,
-    createOrder,
-    listWalletTransactions,
-    createWalletTransaction,
-    listNotifications,
-    createNotification,
-    getAdminStats,
+    listProducts: withSeed(listProducts),
+    getProduct: withSeed(getProduct),
+    createProduct: withSeed(createProduct),
+    updateProduct: withSeed(updateProduct),
+    deleteProduct: withSeed(deleteProduct),
+    listUsers: withSeed(listUsers),
+    getUser: withSeed(getUser),
+    createUser: withSeed(createUser),
+    updateUser: withSeed(updateUser),
+    deleteUser: withSeed(deleteUser),
+    listOrders: withSeed(listOrders),
+    createOrder: withSeed(createOrder),
+    listWalletTransactions: withSeed(listWalletTransactions),
+    createWalletTransaction: withSeed(createWalletTransaction),
+    listNotifications: withSeed(listNotifications),
+    createNotification: withSeed(createNotification),
+    getAdminStats: withSeed(getAdminStats),
   };
 }
 
